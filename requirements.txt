@@ -1,0 +1,6 @@
+streamlit>=1.40
+pymongo
+chromadb
+sentence-transformers
+python-dotenv
+pandas

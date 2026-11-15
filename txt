@@ -1,0 +1,9 @@
+### MongoDB Indexing and Query Performance
+
+We tested MongoDB query performance using the `explain()` method with `executionStats`.
+
+First, we searched for a book using the ISBN index. MongoDB used the `IXSCAN` stage and examined only 1 document.
+
+Next, we performed the same search without using an index. MongoDB used the `COLLSCAN` stage and examined all 8 documents.
+
+Both queries returned the same result. This experiment demonstrates that indexing reduces the number of documents examined and can improve query efficiency, especially when working with large collections.
