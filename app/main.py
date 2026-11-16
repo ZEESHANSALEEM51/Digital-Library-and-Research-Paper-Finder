@@ -21,6 +21,7 @@ from app.services.library_service import (
     return_book,
     add_author,
     get_all_authors,
+    add_research_paper
 )
 
 from app.database.mongodb import get_database
@@ -64,8 +65,9 @@ page = st.sidebar.radio(
         "Issue Book",
         "Return Book",
         "Overdue Transactions",
+        "Add Research Paper",
         "Research Paper Finder",
-        "Duplicate Paper Detection",
+        "Duplicate Paper Detection"
     ]
 )
 
@@ -183,6 +185,84 @@ elif page == "Overdue Transactions":
         )
     else:
         st.success("There are no overdue transactions.")
+
+
+# Add Research Paper
+elif page == "Add Research Paper":
+
+    st.header("Add a New Research Paper")
+
+    authors = get_all_authors()
+
+    with st.form("add_research_paper_form"):
+
+        title = st.text_input("Research Paper Title")
+
+        abstract = st.text_area(
+            "Abstract",
+            height=150
+        )
+
+        publication_year = st.number_input(
+            "Publication Year",
+            min_value=1900,
+            max_value=2100,
+            value=2026
+        )
+
+        doi = st.text_input("DOI")
+
+        keywords_text = st.text_input(
+            "Keywords",
+            placeholder="AI, Machine Learning, Education"
+        )
+
+        selected_authors = st.multiselect(
+            "Select Authors",
+            authors,
+            format_func=lambda author: author["full_name"]
+        )
+
+        submitted = st.form_submit_button(
+            "Add Research Paper"
+        )
+
+        if submitted:
+
+            try:
+                keywords = [
+                    keyword.strip()
+                    for keyword in keywords_text.split(",")
+                    if keyword.strip()
+                ]
+
+                author_ids = [
+                    str(author["_id"])
+                    for author in selected_authors
+                ]
+
+                paper_id = add_research_paper(
+                    title=title,
+                    abstract=abstract,
+                    publication_year=publication_year,
+                    doi=doi,
+                    keywords=keywords,
+                    author_ids=author_ids
+                )
+
+                st.success("Research paper added successfully!")
+
+                st.write("Paper ID:", paper_id)
+
+                with st.spinner("Synchronizing with semantic search..."):
+                    sync_research_papers()
+
+                st.success(
+                    "Research paper is now available for semantic search!"
+                )
+
+            except Exception as error:
+                st.error(f"Could not add research paper: {error}")
 
 
 # Research Paper Finder

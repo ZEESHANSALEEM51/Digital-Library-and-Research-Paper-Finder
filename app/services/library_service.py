@@ -41,14 +41,17 @@ def get_books_with_authors():
             }
         },
         {
-            "$project": {
-                "title": 1,
-                "isbn": 1,
-                "category": 1,
-                "publisher": 1,
-                "authors.full_name": 1
-            }
-        }
+    "$project": {
+        "title": 1,
+        "isbn": 1,
+        "category": 1,
+        "publisher": 1,
+        "publication_year": 1,
+        "copies_total": 1,
+        "copies_available": 1,
+        "authors.full_name": 1
+    }
+}
     ]
 
     return list(db.books.aggregate(pipeline))
@@ -414,3 +417,61 @@ def get_all_authors():
     db = get_database()
 
     return list(db.authors.find().sort("full_name", 1))
+
+def add_research_paper(
+    title,
+    abstract,
+    publication_year,
+    doi,
+    keywords,
+    author_ids=None
+):
+    """Add a research paper to MongoDB."""
+
+    db = get_database()
+
+    if not title.strip():
+        raise ValueError("Research paper title is required.")
+
+    if not abstract.strip():
+        raise ValueError("Abstract is required.")
+
+    if not doi.strip():
+        raise ValueError("DOI is required.")
+
+    author_ids = author_ids or []
+
+    author_object_ids = []
+
+    for author_id in author_ids:
+        if not ObjectId.is_valid(author_id):
+            raise ValueError("Invalid author ID.")
+
+        author_object_ids.append(ObjectId(author_id))
+
+    existing_authors = db.authors.count_documents({
+        "_id": {"$in": author_object_ids}
+    })
+
+    if existing_authors != len(author_object_ids):
+        raise ValueError("One or more selected authors do not exist.")
+
+    paper = {
+        "title": title.strip(),
+        "abstract": abstract.strip(),
+        "publication_year": int(publication_year),
+        "doi": doi.strip(),
+        "keywords": [
+            keyword.strip()
+            for keyword in keywords
+            if keyword.strip()
+        ],
+        "author_ids": author_object_ids
+    }
+
+    try:
+        result = db.research_papers.insert_one(paper)
+        return str(result.inserted_id)
+
+    except DuplicateKeyError:
+        raise ValueError("A research paper with this DOI already exists.")
